@@ -1,0 +1,21 @@
+.news-ticker-container {
+    overflow: hidden;
+    
+  }
+  
+  .news-ticker {
+    
+    white-space: nowrap;
+    animation: marquee 40s linear infinite;
+    color: #FFFF;
+  }
+  
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
