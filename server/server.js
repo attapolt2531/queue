@@ -33,7 +33,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'phr_queue',
+    database: 'phr_queue_auto',
     port: '3306'
 })
 
@@ -49,13 +49,13 @@ connection.connect((err) =>{
 
 //Create Routes
 app.post("/create", async(req, res)=>{
-    const {queue_id,point_id} = req.body;
+    const {vn,point_id} = req.body;
     const status = 'N'
 
     try{
         connection.query(
             "INSERT INTO callqueue(queue_id,point_id,datetime_call,status) VALUES(?,?,CURRENT_TIMESTAMP,?)",
-            [queue_id,point_id,status],
+            [vn,point_id,status],
             (err,result,fields) => {
                 if(err){
                     console.log("Error while inserting Data into data base", err)

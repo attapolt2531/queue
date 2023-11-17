@@ -15,7 +15,6 @@ import ButtonGroupChanel from './buttonGroupChanel';
 // import ButtonGroupPatient from './buttonGroupPatient';
 import { Badge, Container } from '@mui/material';
 import Link from '@mui/material/Link';
-import LocalPrintshopRoundedIcon from '@mui/icons-material/LocalPrintshopRounded';
 import Navbar from './Navbar'
 // import { useParams } from 'react-router-dom';
 import { getApiIp } from './api';
@@ -124,7 +123,7 @@ export default function Users() {
 const fetchData = () => {
   const storeSwitch = localStorage.getItem('switch');
 
-  fetch(apiValue +"/read/multi/"+storeSwitch)
+  fetch(`http://localhost/API/PatientCallQ.php?switch=${storeSwitch}`)
     .then(res => res.json())
     .then((result) =>{
       setItems(result)
@@ -151,24 +150,15 @@ useEffect(()=>{
 
 
 
-  const call = (id) => {
+  const call = (vn) => {
     if(selectedIndex === 0){
       ErrAlert()
     }else{
-      var requestOptions = {
-        method: 'PATCH',
-        redirect: 'follow'
-      };
-      
-      fetch(`${apiValue}/update/${id}`, requestOptions)
-        .then(response => response.json())  // Parse response as JSON
-        .then(result => {
-          if (result.status === 'ok') {
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
     
             var raw = JSON.stringify({
-              "queue_id": id,
+              "vn": vn,
               "point_id": selectedIndex
             });
     
@@ -180,40 +170,16 @@ useEffect(()=>{
             };
     
             fetch(apiValue+"/create", postRequestOptions)  // Added http:// in URL
-              .then(response => response.text())
+              .then(response => response.json())
               .then(result => console.log(result))
               .catch(error => console.log('error', error));
-          }
-        })
-        .catch(error => console.log('error', error));
-        showAlert(id);
+          
+        showAlert(vn);
     }
     
   };
 
-  const printAndCloseTab = (id) => {
-    var requestOptions = {
-      method: 'GET',
-      redirect: 'follow'
-    };
-    
-    fetch(`${apiValue}/read/single/${id}`, requestOptions)
-      .then(response => response.json())
-      .then(result => {
-            // เปิดหน้าในแท็บใหม่
-            const newTab = window.open('', '_blank');
-            // เขียนเนื้อหาที่ต้องการพิมพ์ในแท็บใหม่
-            newTab.document.write('<html><body><center>บัตรคิวห้องจ่ายยา<br><h3>คิวที่</h3><h1>' + result[0].type + formatQueueNumber(result[0].queue) +'</h1><p>'+ result[0].fullname +'</p><p>' + result[0].hn + '</p></center></body></html>');
-            // เรียกใช้ window.print() เพื่อพิมพ์
-            newTab.window.print();
-            // ปิดแท็บหลังจากพิมพ์เสร็จ
-            newTab.window.close();
-              })
-      .catch(error => console.log('error', error));
-
-
-
-  }
+ 
   
   useEffect(()=>{
     const token = localStorage.getItem('token')
@@ -273,9 +239,11 @@ fetch(`${apiValue}/authen`, requestOptions)
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">vn</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Name</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Department</TableCell>
-                  
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Queue</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Status</TableCell>
+                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Queue</TableCell>
+                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Time</TableCell>
+
+                  
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -289,10 +257,13 @@ fetch(`${apiValue}/authen`, requestOptions)
                     <TableCell component="th" scope="row">{row.hn}</TableCell>
                     <TableCell align="center">{row.vn}</TableCell>
                     <TableCell align="right">{row.fullname}</TableCell>
-                    <TableCell align="right">{row.dep}</TableCell>
-                    <TableCell style={{ fontWeight: 'bold'}} align="right">{row.type+formatQueueNumber(row.queue)}</TableCell>
-                    <TableCell align="right">{row.qst}</TableCell>
-                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row.id)} endIcon={<CampaignIcon />}>เรียก</Button></Badge><Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.id)}><LocalPrintshopRoundedIcon />Print</Button></TableCell>
+                     <TableCell align="right">{row.main_dep_name}</TableCell>
+                     <TableCell align="right">{row.cur_dep_name}</TableCell>
+                     <TableCell align="right">{row.oqueue}</TableCell>
+                     <TableCell align="right">{row.cur_dep_time}</TableCell>
+                  {/*  <TableCell style={{ fontWeight: 'bold'}} align="right">{row.type+formatQueueNumber(row.queue)}</TableCell>
+                    <TableCell align="right">{row.qst}</TableCell> */}
+                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row.vn)} endIcon={<CampaignIcon />}>เรียก</Button></Badge></TableCell>
                     {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
         <CampaignIcon /> Call
       </IconButton></TableCell> */}
