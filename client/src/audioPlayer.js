@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getApiIp } from './api';
+import { apiIp, apiHisIp } from './config';
 import QueueMonitor from './queueMonitor'
 
 export default function AudioPlayer() {
@@ -16,7 +16,6 @@ export default function AudioPlayer() {
   // }
 
 
-  const apiValue = getApiIp();
 
   const [point, setPoint] = useState('');
   const [type, setType] = useState('');
@@ -45,7 +44,7 @@ const number3 = formattedQueue[2];
       redirect: 'follow'
     };
     
-    fetch(`${apiValue}/downdate/${queueID}`, requestOptions)
+    fetch(`${apiIp}/downdate/${queueID}`, requestOptions)
       .then(response => response.text())
       .then(result => console.log(result))
       .catch(error => console.log('error', error));
@@ -57,7 +56,7 @@ const number3 = formattedQueue[2];
       redirect: 'follow',
     };
 
-    fetch(`${apiValue}/readTVCall`, requestOptions)
+    fetch(`${apiIp}/readTVCall`, requestOptions)
       .then(response => response.json())
       .then(result => {
         if(result.length > 0){

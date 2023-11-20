@@ -17,7 +17,7 @@ import { Badge, Container } from '@mui/material';
 import Link from '@mui/material/Link';
 import Navbar from './Navbar'
 // import { useParams } from 'react-router-dom';
-import { getApiIp } from './api';
+import { apiIp, apiHisIp } from './config';
 import Swal from 'sweetalert2'
 import MaterialUISwitch from './switch'
 
@@ -45,7 +45,7 @@ export default function Users() {
       redirect: 'follow'
     };
     
-    fetch(`${apiValue}/read/single/${id}`, requestOptions)
+    fetch(`${apiIp}/read/single/${id}`, requestOptions)
       .then(response => response.json())
       .then(result => {
         Swal.fire({
@@ -64,7 +64,7 @@ export default function Users() {
               redirect: 'follow'
             };
             
-            fetch(`${apiValue}/update/status/${id}`, requestOptions)
+            fetch(`${apiIp}/update/status/${id}`, requestOptions)
               .then(response => response.text())
               .then(result => console.log(result))
               .catch(error => console.log('error', error));
@@ -116,14 +116,14 @@ export default function Users() {
 
 
 
-  const apiValue = getApiIp();
+  // const apiValue = getApiIp();
 
   
 
 const fetchData = () => {
   const storeSwitch = localStorage.getItem('switch');
 
-  fetch(`http://localhost/API/PatientCallQ.php?switch=${storeSwitch}`)
+  fetch(apiHisIp +"/read/multi/"+storeSwitch)
     .then(res => res.json())
     .then((result) =>{
       setItems(result)
@@ -154,6 +154,15 @@ useEffect(()=>{
     if(selectedIndex === 0){
       ErrAlert()
     }else{
+      var requestOptions = {
+        method: 'PATCH',
+        redirect: 'follow'
+      };
+      
+      fetch(`${apiIp}/update/${id}`, requestOptions)
+        .then(response => response.json())  // Parse response as JSON
+        .then(result => {
+          if (result.status === 'ok') {
             var myHeaders = new Headers();
             myHeaders.append("Content-Type", "application/json");
     
@@ -169,8 +178,8 @@ useEffect(()=>{
               redirect: 'follow'
             };
     
-            fetch(apiValue+"/create", postRequestOptions)  // Added http:// in URL
-              .then(response => response.json())
+            fetch(apiIp+"/create", postRequestOptions)  // Added http:// in URL
+              .then(response => response.text())
               .then(result => console.log(result))
               .catch(error => console.log('error', error));
           
@@ -179,7 +188,29 @@ useEffect(()=>{
     
   };
 
- 
+  const printAndCloseTab = (vn) => {
+    var requestOptions = {
+      method: 'GET',
+      redirect: 'follow'
+    };
+    
+    fetch(`${apiHisIp}/read/single/${vn}`, requestOptions)
+      .then(response => response.json())
+      .then(result => {
+            // เปิดหน้าในแท็บใหม่
+            const newTab = window.open('', '_blank');
+            // เขียนเนื้อหาที่ต้องการพิมพ์ในแท็บใหม่
+            newTab.document.write('<html><body><center>บัตรคิวห้องจ่ายยา<br><h3>คิวที่</h3><h1>' + result[0].rx_queue +'</h1><p>'+ result[0].fullname +'</p><p>' + result[0].hn + '</p></center></body></html>');
+            // เรียกใช้ window.print() เพื่อพิมพ์
+            newTab.window.print();
+            // ปิดแท็บหลังจากพิมพ์เสร็จ
+            newTab.window.close();
+              })
+      .catch(error => console.log('error', error));
+
+
+
+  }
   
   useEffect(()=>{
     const token = localStorage.getItem('token')
@@ -192,7 +223,7 @@ var requestOptions = {
   redirect: 'follow'
 };
 
-fetch(`${apiValue}/authen`, requestOptions)
+fetch(`${apiIp}/authen`, requestOptions)
   .then(response => response.json())
   .then(result => {
     if(result.status === 'ok'){
@@ -218,9 +249,9 @@ fetch(`${apiValue}/authen`, requestOptions)
         {/* <Control/> */}
           <Box display="flex" sx={{padding:2}}>
             <Box sx={{ flexGrow: 1 }}>
-              <Link href='create'>
+              {/* <Link href='create'>
                 <Button variant="contained" color='error' startIcon={<AddCircleIcon/>}>สร้างบัตรคิวใหม่</Button>
-              </Link>
+              </Link> */}
             </Box>
             <Box sx={{padding:1}}>
               <MaterialUISwitch />
@@ -257,13 +288,10 @@ fetch(`${apiValue}/authen`, requestOptions)
                     <TableCell component="th" scope="row">{row.hn}</TableCell>
                     <TableCell align="center">{row.vn}</TableCell>
                     <TableCell align="right">{row.fullname}</TableCell>
-                     <TableCell align="right">{row.main_dep_name}</TableCell>
-                     <TableCell align="right">{row.cur_dep_name}</TableCell>
-                     <TableCell align="right">{row.oqueue}</TableCell>
-                     <TableCell align="right">{row.cur_dep_time}</TableCell>
-                  {/*  <TableCell style={{ fontWeight: 'bold'}} align="right">{row.type+formatQueueNumber(row.queue)}</TableCell>
-                    <TableCell align="right">{row.qst}</TableCell> */}
-                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row.vn)} endIcon={<CampaignIcon />}>เรียก</Button></Badge></TableCell>
+                    <TableCell align="right">{row.department}</TableCell>
+                    <TableCell style={{ fontWeight: 'bold'}} align="right">{row.rx_queue}</TableCell>
+                    <TableCell align="right"></TableCell>
+                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row.id)} endIcon={<CampaignIcon />}>เรียก</Button></Badge><Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopRoundedIcon />Print</Button></TableCell>
                     {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
         <CampaignIcon /> Call
       </IconButton></TableCell> */}

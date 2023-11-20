@@ -6,7 +6,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import { useParams } from 'react-router-dom';
-import { getApiIp } from './api';
+import { apiIp, apiHisIp } from './config';
 
 
 
@@ -22,7 +22,6 @@ export default function Print() {
   const formatQueueNumber = (number) =>{
     return number.toString().padStart(3,'0')
   }
-  const apiValue = getApiIp();
 
     
     const { vn } = useParams();
@@ -49,7 +48,7 @@ export default function Print() {
           redirect: 'follow'
         };
         
-        fetch(`${apiValue}/read/singleVN/${vn}`, requestOptions)
+        fetch(`${apiIp}/read/singleVN/${vn}`, requestOptions)
         .then(response => response.json())
         .then(result => {
           if (result && result.length > 0) {
@@ -80,7 +79,7 @@ export default function Print() {
       redirect: 'follow'
     };
     
-    fetch(`${apiValue}/authen`, requestOptions)
+    fetch(`${apiIp}/authen`, requestOptions)
       .then(response => response.json())
       .then(result => {
         if(result.status === 'ok'){

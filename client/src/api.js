@@ -1,9 +1,13 @@
 // api.js
-import apiIp from './config';
+import { apiIp, apiHisIp } from './config';
 
-// สร้างฟังก์ชันเพื่อส่งค่า apiIp ออกไปให้โมดูลอื่นๆ
+// สร้างฟังก์ชันที่ให้ค่า API URLs ตามต้องการ
 export function getApiIp() {
   return apiIp;
 }
 
-// สร้างฟังก์ชันอื่นๆ ที่เกี่ยวข้องกับการใช้งาน api ตรงนี้
+export function getApiHisIp() {
+  return apiHisIp;
+}
+
+// สร้างฟังก์ชันอื่น ๆ ที่เกี่ยวข้องกับการใช้งาน API ตรงนี้

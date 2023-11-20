@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 import './Blink.css'
 // import NewsTicker from './NewsTicker';
 import { useState,useEffect } from 'react';
-import { getApiIp } from './api';
+import { apiIp, apiHisIp } from './config';
 
 
 
@@ -35,7 +35,6 @@ export default function SimpleContainer() {
     return number.toString().padStart(3,'0')
   }
 
-  const apiValue = getApiIp();  
   const [queue, setQueue] = useState([]);
 
   const fetchDataTv = () => {
@@ -44,7 +43,7 @@ export default function SimpleContainer() {
       redirect: 'follow'
     };
 
-    fetch(`${apiValue}/readTV`, requestOptions)
+    fetch(`${apiIp}/readTV`, requestOptions)
       .then(response => response.json())
       .then((result) => {
         setQueue(result);

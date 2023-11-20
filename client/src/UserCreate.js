@@ -14,7 +14,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Navbar from './Navbar';
-import { getApiIp } from './api';
+import { apiIp, apiHisIp } from './config';
 
 
 
@@ -29,7 +29,6 @@ export default function UserCreate() {
 
   
   
-  const apiValue = getApiIp();
 
   const [queueType, setQueueType] = React.useState(2);
 
@@ -87,7 +86,7 @@ var requestOptions = {
   redirect: 'follow'
 };
 
-fetch(apiValue+"/insert", requestOptions)
+fetch(apiIp+"/insert", requestOptions)
     .then((result) => {
 	console.log(result)
 	window.location.href = 'print/' + currentItem.vn;
@@ -112,7 +111,7 @@ headers: myHeaders,
 redirect: 'follow'
 };
 
-fetch(`${apiValue}/authen`, requestOptions)
+fetch(`${apiIp}/authen`, requestOptions)
 .then(response => response.json())
 .then(result => {
   if(result.status === 'ok'){
