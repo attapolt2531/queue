@@ -6,6 +6,9 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 var jwt = require('jsonwebtoken');
 const secret = 'Fullstack-Login-2021'
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 
 const app = express();
@@ -33,7 +36,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'phr_queue_auto',
+    database: 'phr_queue',
     port: '3306'
 })
 
@@ -61,7 +64,7 @@ app.post("/create", async(req, res)=>{
                     console.log("Error while inserting Data into data base", err)
                     return res.status(400).send();
                 }
-                return res.status(201).json({message: "New data successfully created!"})
+                return res.status(201).json({status: "ok",message: "New data successfully created!"})
             }
         )
 
@@ -72,44 +75,34 @@ app.post("/create", async(req, res)=>{
     
 })
 
-//Create queue
+// Create queue
 app.post("/insert", async (req, res) => {
-    const { vn, queueType, hn, fname, dep } = req.body;
-
+    const { vn, queueType,queue, hn, fname, dep } = req.body;
+  
     try {
-        connection.query(
-            "SELECT MAX(queue) AS maxQueue FROM queue WHERE vstdate = CURDATE() AND queue_type = ?",
-            [queueType],
-            (err, result, fields) => {
-                if (err) {
-                    console.log("Error", err);
-                    return res.status(400).send();
-                }
-
-                let maxQueue = result[0].maxQueue ? parseInt(result[0].maxQueue, 10) + 1 : 1;
-
-                connection.query(
-                    "INSERT INTO queue(vn, queue_type, queue, hn, fullname, dep, vstdate,calling,print,status) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,'N','N','02')",
-                    [vn, queueType, maxQueue, hn, fname, dep],
-                    (err, result, fields) => {
-                        if (err) {
-                            console.log("Error while inserting data into database", err);
-                            return res.status(400).send();
-                        }
-                        return res.status(201).json({ 
-                            id:result.insertId,
-                            status:"ok",
-                            message: "New data successfully created!"
-                         });
-                    }
-                );
-            }
-        );
+      connection.query(
+        "INSERT INTO queue(vn, queue_type, queue, hn, fullname, dep, vstdate, calling, print, status) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'Y', 'N', '02')",
+        [vn, queueType, queue, hn, fname, dep],
+        (err, result, fields) => {
+          if (err) {
+            console.error("Error while inserting data into the database", err);
+            return res.status(500).json({ status: "error", message: "Internal Server Error" });
+          }
+  
+          return res.status(201).json({
+            id: result.insertId,
+            status: "ok",
+            message: "New data successfully created!",
+          });
+        }
+      );
     } catch (error) {
-        console.log("Error", error);
-        return res.status(500).send();
+      console.error("Error", error);
+      return res.status(500).json({ status: "error", message: "Internal Server Error" });
     }
-});
+  });
+  
+
 
 
 //READ
@@ -134,6 +127,8 @@ app.get("/read", async(req,res)=>{
     }
 })
 
+
+
 //READ MONITOR TV
 
 app.get("/readTV", async(req,res)=>{
@@ -142,7 +137,7 @@ app.get("/readTV", async(req,res)=>{
 
     try{
 
-        connection.query("SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,type.type FROM queue INNER JOIN callqueue ON callqueue.queue_id = queue.id INNER JOIN type ON type.id = queue.queue_type WHERE queue.vstdate = CURDATE() ORDER BY callqueue.id DESC Limit 4", (err,result,fields)=>{
+        connection.query("SELECT point_id,queue,qid,hn,fullname,vstdate,id,queue_id,calling,queue_type FROM (SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,queue.queue_type,ROW_NUMBER() OVER (PARTITION BY callqueue.queue_id ORDER BY callqueue.id DESC) AS row_num FROM callqueue INNER JOIN queue ON callqueue.queue_id = queue.vn  ORDER BY callqueue.id DESC) AS ranked WHERE row_num = 1 LIMIT 4", (err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();
@@ -164,7 +159,7 @@ app.get("/readTvCall", async(req,res)=>{
 
     try{
 
-        connection.query("SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,type.type FROM queue INNER JOIN callqueue ON callqueue.queue_id = queue.id INNER JOIN type ON type.id = queue.queue_type WHERE queue.vstdate = CURDATE() AND queue.calling='Y' AND callqueue.`status` = 'N' ORDER BY callqueue.id ASC Limit 1", (err,result,fields)=>{
+        connection.query("SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,type.type FROM queue INNER JOIN callqueue ON callqueue.queue_id = queue.vn INNER JOIN type ON type.id = queue.queue_type WHERE queue.vstdate = CURDATE() AND queue.calling='Y' ORDER BY callqueue.id ASC Limit 1", (err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();
@@ -260,13 +255,13 @@ app.get("/read/singleVN/:vn", async(req,res)=>{
 
 //UPDATE data
 
-app.patch("/update/:id",async(req,res)=>{
+app.patch("/update/:vn",async(req,res)=>{
 
-    const id = req.params.id
+    const vn = req.params.vn
     const call = 'Y'
 
     try{
-        connection.query("UPDATE queue SET calling = ? WHERE id = ?",[call,id],(err,result,fields)=>{
+        connection.query("UPDATE queue SET calling = ? WHERE id = ?",[call,vn],(err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();
@@ -358,13 +353,13 @@ app.patch("/downdate/:id", async (req, res) => {
 
 //UPDATE Status
 
-app.patch("/update/status/:id",async(req,res)=>{
+app.patch("/update/status/:vn",async(req,res)=>{
 
-    const id = req.params.id
-    const status = '01'
+    const vn = req.params.vn
+    const status = 'Y'
 
     try{
-        connection.query("UPDATE queue SET status = ? WHERE id = ?",[status,id],(err,result,fields)=>{
+        connection.query("UPDATE callqueue SET status = ? WHERE queue_id = ?",[status,vn],(err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();
@@ -488,10 +483,65 @@ app.post("/register", async (req, res) => {
     }
 });
 
+app.patch('/generate-audio', async (req, res) => {
+    try {
+      const { text } = req.body;
+      const fileName = 'output.mp3'; // ใช้ชื่อไฟล์และนามสกุลตามที่คุณต้องการ
+      const outputPath = path.join(__dirname, 'audio', fileName);
+      const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
+  
+      // ทำ HTTP request เพื่อดึงข้อมูล mp3
+      const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
+  
+      // ตรวจสอบและสร้างโฟลเดอร์ audio หากไม่มี
+      const audioFolder = path.join(__dirname, 'audio');
+      if (!fs.existsSync(audioFolder)) {
+        fs.mkdirSync(audioFolder);
+      }
+  
+      // เขียนข้อมูลลงในไฟล์
+      fs.writeFileSync(outputPath, Buffer.from(response.data));
+  
+      console.log('ดาวน์โหลดและบันทึกไฟล์เสียงเรียบร้อย');
+  
+      // เช็คว่าไฟล์ถูกเขียนเรียบร้อยหรือไม่
+      fs.access(outputPath, fs.constants.F_OK, (err) => {
+        if (err) {
+          console.error('มีปัญหาในการเข้าถึงไฟล์:', err);
+          return res.status(500).json({ error: 'มีปัญหาในการเข้าถึงไฟล์' });
+        }
+  
+        console.log('ไฟล์ถูกเขียนเรียบร้อย');
+        res.json({ success: true, message: 'ไฟล์ถูกเขียนเรียบร้อย' });
+      });
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล:', error);
+      res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล', detailedError: error.message });
+    }
+  });
 
+// Serve static files (including MP3 files)
+app.use('/audio', express.static(path.join(__dirname, 'audio')));
 
+// API endpoint to get MP3 file
+app.get('/api/getAudio', (req, res) => {
+    const filePath = path.join(__dirname, 'audio', 'output.mp3');
+    res.sendFile(filePath);
+  });
+  
+app.delete('/api/deleteAudio', (req, res) => {
+    const filePath = path.join(__dirname, 'audio', 'output.mp3');
+    // ลบไฟล์
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error('Error deleting file:', err);
+      return res.status(500).json({ error: 'Error deleting file' });
+    }
 
-
+    console.log('File deleted successfully');
+    res.json({ success: true, message: 'File deleted successfully' });
+  });
+});
 
 
 app.listen(3001,()=>console.log('Server Is running on port 3001'));

@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 import './Blink.css'
 // import NewsTicker from './NewsTicker';
 import { useState,useEffect } from 'react';
-import { apiIp, apiHisIp } from './config';
+import { apiIp } from './config';
 
 
 
@@ -31,9 +31,6 @@ const Item = styled(Paper)(({ theme }) => ({
 
 export default function SimpleContainer() {
 
-  const formatQueueNumber = (number) =>{
-    return number.toString().padStart(3,'0')
-  }
 
   const [queue, setQueue] = useState([]);
 
@@ -89,7 +86,7 @@ export default function SimpleContainer() {
         backgroundColor: index === 0 ? "#00745F" : (index === 1 ? "#03C4A1" : "#BDFEF2"),
         color: "white"
       }}>
-        <h1 className={index === 0 ? 'blink' : ''}>{item.type + formatQueueNumber(item.queue)}</h1>
+        <h1 className={index === 0 ? 'blink' : ''}>{item.queue}</h1>
       </Item>
     </Grid>
 

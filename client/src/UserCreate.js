@@ -14,16 +14,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Navbar from './Navbar';
-import { apiIp, apiHisIp } from './config';
-
-
-
-
-
-
-
-
-
+import { apiIp } from './config';
 
 export default function UserCreate() {
 

@@ -9,18 +9,18 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+// import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ButtonGroupChanel from './buttonGroupChanel';
 // import ButtonGroupPatient from './buttonGroupPatient';
 import { Badge, Container } from '@mui/material';
-import Link from '@mui/material/Link';
+// import Link from '@mui/material/Link';
 import Navbar from './Navbar'
 // import { useParams } from 'react-router-dom';
 import { apiIp, apiHisIp } from './config';
 import Swal from 'sweetalert2'
 import MaterialUISwitch from './switch'
-
+import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
 
 const ErrAlert = () => {
   Swal.fire({
@@ -35,22 +35,22 @@ const ErrAlert = () => {
 
 export default function Users() {
 
-  const formatQueueNumber = (number) =>{
-    return number.toString().padStart(3,'0')
-  }
+  // const formatQueueNumber = (number) =>{
+  //   return number.toString().padStart(3,'0')
+  // }
 
-  const showAlert = (id) => {
+  const showAlert = (vn) => {
     var requestOptions = {
       method: 'GET',
       redirect: 'follow'
     };
     
-    fetch(`${apiIp}/read/single/${id}`, requestOptions)
+    fetch(`${apiHisIp}/read/single/${vn}`, requestOptions)
       .then(response => response.json())
       .then(result => {
         Swal.fire({
           title: 'ระบบกำลังเรียกคิวผู้ป่วย',
-          text: `คิวที่ ${result[0].type}${formatQueueNumber(result[0].queue)} HN ${result[0].hn} ${result[0].fullname}`,
+          text: `คิวที่ ${result[0].rx_queue} HN ${result[0].hn} ${result[0].fullname}`,
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#3085d6',
@@ -64,7 +64,7 @@ export default function Users() {
               redirect: 'follow'
             };
             
-            fetch(`${apiIp}/update/status/${id}`, requestOptions)
+            fetch(`${apiIp}/update/status/${vn}`, requestOptions)
               .then(response => response.text())
               .then(result => console.log(result))
               .catch(error => console.log('error', error));
@@ -150,43 +150,69 @@ useEffect(()=>{
 
 
 
-  const call = (vn) => {
-    if(selectedIndex === 0){
-      ErrAlert()
-    }else{
-      var requestOptions = {
-        method: 'PATCH',
-        redirect: 'follow'
-      };
-      
-      fetch(`${apiIp}/update/${id}`, requestOptions)
-        .then(response => response.json())  // Parse response as JSON
-        .then(result => {
-          if (result.status === 'ok') {
-            var myHeaders = new Headers();
-            myHeaders.append("Content-Type", "application/json");
-    
-            var raw = JSON.stringify({
-              "vn": vn,
-              "point_id": selectedIndex
-            });
-    
-            var postRequestOptions = {
-              method: 'POST',
-              headers: myHeaders,
-              body: raw,
-              redirect: 'follow'
-            };
-    
-            fetch(apiIp+"/create", postRequestOptions)  // Added http:// in URL
-              .then(response => response.text())
-              .then(result => console.log(result))
-              .catch(error => console.log('error', error));
-          
-        showAlert(vn);
-    }
-    
-  };
+const call = (row, selectedIndex) => {
+  if (selectedIndex === 0) {
+    ErrAlert();
+  } else {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({
+      "vn": row.vn,
+      "queueType": "2",
+      "queue": row.rx_queue,
+      "hn": row.hn,
+      "fname": row.fullname,
+      "dep": row.department
+    });
+
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    fetch("http://localhost:3001/insert", requestOptions)
+      .then(response => response.json()) // Assuming the response is in JSON format
+      .then(result => {
+        console.log(result);
+
+        if (result.status === 'ok') {
+          // Proceed with the second API call
+          var myHeaders = new Headers();
+          myHeaders.append('Content-Type', 'application/json');
+
+          var raw = JSON.stringify({
+            vn: row.vn,
+            point_id: selectedIndex,
+          });
+
+          var postRequestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow',
+          };
+
+          fetch(apiIp + '/create', postRequestOptions)
+            .then(response => response.text())
+            .then(result => console.log(result))
+            .catch(error => console.error('Error in second fetch:', error));
+
+          showAlert(row.vn);
+        } else {
+          // Handle the case where the status is not 'ok'
+          console.error('Error in first fetch. Status is not ok:', result.status);
+          // You can optionally show an error message or take other actions here
+        }
+      })
+      .catch(error => console.error('Error in first fetch:', error));
+  }
+}
+
+
+
 
   const printAndCloseTab = (vn) => {
     var requestOptions = {
@@ -270,9 +296,8 @@ fetch(`${apiIp}/authen`, requestOptions)
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">vn</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Name</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Department</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Status</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Queue</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Time</TableCell>
+                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Status</TableCell>
 
                   
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">Action</TableCell>
@@ -291,7 +316,7 @@ fetch(`${apiIp}/authen`, requestOptions)
                     <TableCell align="right">{row.department}</TableCell>
                     <TableCell style={{ fontWeight: 'bold'}} align="right">{row.rx_queue}</TableCell>
                     <TableCell align="right"></TableCell>
-                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row.id)} endIcon={<CampaignIcon />}>เรียก</Button></Badge><Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopRoundedIcon />Print</Button></TableCell>
+                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row, selectedIndex)} endIcon={<CampaignIcon />}>เรียก</Button></Badge><Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopIcon />Print</Button></TableCell>
                     {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
         <CampaignIcon /> Call
       </IconButton></TableCell> */}

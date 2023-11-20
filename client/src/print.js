@@ -6,7 +6,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import { useParams } from 'react-router-dom';
-import { apiIp, apiHisIp } from './config';
+import { apiIp } from './config';
 
 
 
