@@ -23,8 +23,6 @@ export default function AudioPlayer() {
     currentAudioRef.addEventListener('ended', () => {
       setIsPlaying(false);
       updateData();
-      clearVariable();
-      deleteAudio();
     });
   
     // ตอนที่ component ถูก unmount, ลบ event listener
@@ -32,10 +30,8 @@ export default function AudioPlayer() {
       currentAudioRef.removeEventListener('ended', () => {
         setIsPlaying(false);
         updateData();
-        clearVariable();
-        deleteAudio();
       });
-      // deleteAudio();
+      deleteAudio();
     };
   }); 
 
@@ -45,7 +41,6 @@ export default function AudioPlayer() {
 
     var raw = JSON.stringify({
       "text": `ขอเชิญหมายเลข ${Queue} ${Name} ที่ช่องรับยาหมายเลข ${Point} ค่ะ`
-      // "text": `ขอเชิญ ${Name} ที่ช่องรับยาหมายเลข ${Point} ค่ะ`
     });
 
     var requestOptions = {
@@ -61,8 +56,6 @@ export default function AudioPlayer() {
         console.log(result)
         if (result.success) {
           fetchAudio();
-          clearVariable();
-          updateData();
         } else {
           console.log("Error generating audio");
         }
@@ -214,13 +207,13 @@ export default function AudioPlayer() {
 
   return (
     <React.Fragment>
-      {/* <button onClick={fetchData}>fetchData</button>
+      <button onClick={fetchData}>fetchData</button>
       <button onClick={generateAudio}>generate</button>
       <button onClick={fetchAudio}>FetchAudio</button>
-      <button onClick={play}>Play</button> {/* เล่นไฟล์จบแล้วถึงทำขั้นตอนต่อไป 
+      <button onClick={play}>Play</button> {/* เล่นไฟล์จบแล้วถึงทำขั้นตอนต่อไป  */}
       <button onClick={deleteAudio}>Delete</button>
       <button onClick={updateData}>Updatedata</button>
-      <button onClick={clearVariable}>clearVariable</button> */}
+      <button onClick={clearVariable}>clearVariable</button>
       <audio ref={audioRef} controls style={{ display: 'none' }}>
         <source src={audioUrl} type="audio/mp3" />
         Your browser does not support the audio element.
