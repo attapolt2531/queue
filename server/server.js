@@ -23,22 +23,22 @@ app.use(cors());
 
 
 // production
-// const connection = mysql.createConnection({
-//     host: '10.0.51.72',
-//     user: 'client',
-//     password: 'p11026',
-//     database: 'phr_queue',
-//     port: '3306'
-// })
-
-//localhost
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
+    host: '10.0.51.72',
+    user: 'client',
+    password: 'p11026',
     database: 'phr_queue',
     port: '3306'
 })
+
+//localhost
+// const connection = mysql.createConnection({
+//     host: 'localhost',
+//     user: 'root',
+//     password: '',
+//     database: 'phr_queue',
+//     port: '3306'
+// })
 
 connection.connect((err) =>{
     if (err){

@@ -55,7 +55,7 @@ export default function AudioPlayer() {
       redirect: 'follow'
     };
 
-    fetch("http://localhost:3001/generate-audio", requestOptions)
+    fetch("http://10.0.51.72:3001/generate-audio", requestOptions)
       .then(response => response.json())
       .then(result => {
         console.log(result)
@@ -72,7 +72,7 @@ export default function AudioPlayer() {
 
       const fetchAudio = async () => {
         try {
-          const response = await axios.get('http://localhost:3001/api/getAudio', {
+          const response = await axios.get('http://10.0.51.72:3001/api/getAudio', {
             responseType: 'blob',
           });
       
@@ -132,7 +132,7 @@ export default function AudioPlayer() {
       redirect: 'follow'
     };
     
-    fetch("http://localhost:3001/readTVCall", requestOptions)
+    fetch("http://10.0.51.72:3001/readTVCall", requestOptions)
       .then(response => response.json())
       .then(result => {
         if(result.length > 0){
@@ -150,7 +150,7 @@ export default function AudioPlayer() {
 
   const deleteAudio = async () => {
     try {
-      await axios.delete('http://localhost:3001/api/deleteAudio');
+      await axios.delete('http://10.0.51.72:3001/api/deleteAudio');
       console.log('File deleted successfully');
       clearVariable();
     } catch (error) {

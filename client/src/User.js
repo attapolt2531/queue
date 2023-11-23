@@ -173,7 +173,7 @@ const call = (row, selectedIndex) => {
       redirect: 'follow'
     };
 
-    fetch("http://localhost:3001/insert", requestOptions)
+    fetch("http://10.0.51.72:3001/insert", requestOptions)
       .then(response => response.json()) // Assuming the response is in JSON format
       .then(result => {
         console.log(result);
