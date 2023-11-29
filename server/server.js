@@ -23,22 +23,22 @@ app.use(cors());
 
 
 // production
-const connection = mysql.createConnection({
-    host: '10.0.51.72',
-    user: 'client',
-    password: 'p11026',
-    database: 'phr_queue',
-    port: '3306'
-})
-
-//localhost
 // const connection = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: '',
+//     host: '10.0.51.72',
+//     user: 'client',
+//     password: 'p11026',
 //     database: 'phr_queue',
 //     port: '3306'
 // })
+
+//localhost
+const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'phr_queue',
+    port: '3306'
+})
 
 connection.connect((err) =>{
     if (err){
@@ -286,8 +286,8 @@ app.patch("/downdate/:id", async (req, res) => {
       // อัพเดทตาราง "queue"
       await new Promise((resolve, reject) => {
         connection.query(
-          "UPDATE queue SET calling = ? WHERE id = ?",
-          [call, id],
+          "UPDATE queue SET calling = ?",
+          [call],
           (err, result) => {
             if (err) {
               console.error("Error updating queue:", err);
@@ -487,14 +487,14 @@ app.patch('/generate-audio', async (req, res) => {
     try {
       const { text } = req.body;
       const fileName = 'output.mp3'; // ใช้ชื่อไฟล์และนามสกุลตามที่คุณต้องการ
-      const outputPath = path.join(__dirname, 'audio', fileName);
+      const outputPath = path.join(__dirname, '../client/src/sound', fileName);
       const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
   
       // ทำ HTTP request เพื่อดึงข้อมูล mp3
       const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
   
       // ตรวจสอบและสร้างโฟลเดอร์ audio หากไม่มี
-      const audioFolder = path.join(__dirname, 'audio');
+      const audioFolder = path.join(__dirname, '../client/src/sound');
       if (!fs.existsSync(audioFolder)) {
         fs.mkdirSync(audioFolder);
       }
@@ -521,18 +521,18 @@ app.patch('/generate-audio', async (req, res) => {
   });
 
 // Serve static files (including MP3 files)
-app.use('/audio', express.static(path.join(__dirname, 'audio')));
+app.use('/audio', express.static(path.join(__dirname, '../client/src/sound')));
 
 // API endpoint to get MP3 file
 app.get('/api/getAudio', (req, res) => {
-    const filePath = path.join(__dirname, 'audio', 'output.mp3');
+    const filePath = path.join(__dirname, '../client/src/sound', 'output.mp3');
     res.status(200).sendFile(filePath);
     
     
   });
   
 app.delete('/api/deleteAudio', (req, res) => {
-    const filePath = path.join(__dirname, 'audio', 'output.mp3');
+    const filePath = path.join(__dirname, '../client/src/sound', 'output.mp3');
     // ลบไฟล์
   fs.unlink(filePath, (err) => {
     if (err) {

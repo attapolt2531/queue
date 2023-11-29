@@ -16,7 +16,7 @@ import ButtonGroupChanel from './buttonGroupChanel';
 import { Badge, Container } from '@mui/material';
 // import Link from '@mui/material/Link';
 import Navbar from './Navbar'
-// import { useParams } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import { apiIp, apiHisIp } from './config';
 import Swal from 'sweetalert2'
 import MaterialUISwitch from './switch'
@@ -39,18 +39,18 @@ export default function Users() {
   //   return number.toString().padStart(3,'0')
   // }
 
-  const showAlert = (vn) => {
+  const showAlert = (row) => {
     var requestOptions = {
       method: 'GET',
       redirect: 'follow'
     };
     
-    fetch(`${apiHisIp}/read/single/${vn}`, requestOptions)
+    fetch(`${apiIp}/read/single/${row.vn}`, requestOptions)
       .then(response => response.json())
       .then(result => {
         Swal.fire({
           title: 'ระบบกำลังเรียกคิวผู้ป่วย',
-          text: `คิวที่ ${result[0].rx_queue} HN ${result[0].hn} ${result[0].fullname}`,
+          text: `คิวที่ ${row.rx_queue} HN ${row.hn} ${row.fullname}`,
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#3085d6',
@@ -64,24 +64,22 @@ export default function Users() {
               redirect: 'follow'
             };
             
-            fetch(`${apiIp}/update/status/${vn}`, requestOptions)
-              .then(response => response.text())
+            fetch(`${apiIp}/update/status/${row.vn}`, requestOptions)
+              .then(response => response.json())
               .then(result => console.log(result))
               .catch(error => console.log('error', error));
             Swal.fire(
               'บันทึกข้อมูลสำเร็จ!',
               'ปรับปรุงสถานะของผู้ป่วยเรียบร้อยแล้ว',
               'success'
-            )
+            );
           }
-        })
-             
-            
-              })
+        });
+      })
       .catch(error => console.log('error', error));
-
-    
   };
+  
+
   const [items, setItems] = useState([]);
 
 
@@ -142,19 +140,62 @@ useEffect(()=>{
 })
 
 
+const generateAudio = (row,selectedIndex) => {
+  var myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
 
+var raw = JSON.stringify({
+"name": `${row.vn}${selectedIndex}`,  
+"text": `ขอเชิญหมายเลข ${row.rx_queue} ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
+});
 
+var requestOptions = {
+method: 'PATCH',
+headers: myHeaders,
+body: raw,
+redirect: 'follow'
+};
 
+fetch(`${apiIp}/generate-audio`, requestOptions)
+.then(response => response.json())
+.then(result => {
+  console.log(result)
+  if(result.success){
+    create(row, selectedIndex)
+  }else{
+    console.log("สร้างไฟล์ mp3 ไม่สำเร็จ");
+  }
+})
+.catch(error => console.log('error', error));
+}
 
+const create = (row, selectedIndex) => {
+  var myHeaders = new Headers();
+          myHeaders.append('Content-Type', 'application/json');
 
+          var raw = JSON.stringify({
+            vn: row.vn,
+            point_id: selectedIndex,
+          });
 
+          var postRequestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow',
+          };
 
+          fetch(apiIp + '/create', postRequestOptions)
+            .then(response => response.text())
+            .then(result => {
+              console.log(result)
+              insert(row);
+            })
+            .catch(error => console.error('Error in second fetch:', error));
+}
 
-const call = (row, selectedIndex) => {
-  if (selectedIndex === 0) {
-    ErrAlert();
-  } else {
-    var myHeaders = new Headers();
+const insert = (row) => {
+  var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
 
     var raw = JSON.stringify({
@@ -173,41 +214,23 @@ const call = (row, selectedIndex) => {
       redirect: 'follow'
     };
 
-    fetch("http://10.0.51.72:3001/insert", requestOptions)
+    fetch(`${apiIp}/insert`, requestOptions)
       .then(response => response.json()) // Assuming the response is in JSON format
       .then(result => {
         console.log(result);
 
-        if (result.status === 'ok') {
-          // Proceed with the second API call
-          var myHeaders = new Headers();
-          myHeaders.append('Content-Type', 'application/json');
-
-          var raw = JSON.stringify({
-            vn: row.vn,
-            point_id: selectedIndex,
-          });
-
-          var postRequestOptions = {
-            method: 'POST',
-            headers: myHeaders,
-            body: raw,
-            redirect: 'follow',
-          };
-
-          fetch(apiIp + '/create', postRequestOptions)
-            .then(response => response.text())
-            .then(result => console.log(result))
-            .catch(error => console.error('Error in second fetch:', error));
-
-          showAlert(row.vn);
-        } else {
-          // Handle the case where the status is not 'ok'
-          console.error('Error in first fetch. Status is not ok:', result.status);
-          // You can optionally show an error message or take other actions here
-        }
+        showAlert(row)
       })
       .catch(error => console.error('Error in first fetch:', error));
+}
+
+
+
+const call = (row, selectedIndex) => {
+  if (selectedIndex === 0) {
+    ErrAlert();
+  } else {
+    generateAudio(row, selectedIndex)    
   }
 }
 
@@ -316,7 +339,12 @@ fetch(`${apiIp}/authen`, requestOptions)
                     <TableCell align="right">{row.department}</TableCell>
                     <TableCell style={{ fontWeight: 'bold'}} align="right">{row.rx_queue}</TableCell>
                     <TableCell align="right"></TableCell>
-                    <TableCell align="center"><Badge badgeContent={row.cc_call} color='error'><Button variant="contained" color='success' onClick={() => call(row, selectedIndex)} endIcon={<CampaignIcon />}>เรียก</Button></Badge><Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopIcon />Print</Button></TableCell>
+                    <TableCell align="center">
+                    <Badge badgeContent={row.cc_call} color='error'>
+                    <Button variant="contained" color='success' onClick={() => call(row, selectedIndex)} endIcon={<CampaignIcon />}>เรียก</Button>
+                    </Badge>
+                    <Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopIcon />Print</Button>
+                    </TableCell>
                     {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
         <CampaignIcon /> Call
       </IconButton></TableCell> */}

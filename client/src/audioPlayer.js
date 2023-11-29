@@ -18,7 +18,7 @@ export default function AudioPlayer() {
 
   useEffect(() => {
     const currentAudioRef = audioRef.current;
-  
+
     // เพิ่ม event listener สำหรับเมื่อไฟล์ MP3 ถูกเล่นจบ
     currentAudioRef.addEventListener('ended', () => {
       setIsPlaying(false);
@@ -26,7 +26,7 @@ export default function AudioPlayer() {
       clearVariable();
       deleteAudio();
     });
-  
+
     // ตอนที่ component ถูก unmount, ลบ event listener
     return () => {
       currentAudioRef.removeEventListener('ended', () => {
@@ -35,122 +35,74 @@ export default function AudioPlayer() {
         clearVariable();
         deleteAudio();
       });
-      // deleteAudio();
     };
-  }); 
+  });
 
-  const generateAudio = () => {
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
+  const fetchAudio = async () => {
+    try {
+      const response = await axios.get(`${apiIp}/api/getAudio`, {
+        responseType: 'blob',
+      });
 
-    var raw = JSON.stringify({
-      "text": `ขอเชิญหมายเลข ${Queue} ${Name} ที่ช่องรับยาหมายเลข ${Point} ค่ะ`
-      // "text": `ขอเชิญ ${Name} ที่ช่องรับยาหมายเลข ${Point} ค่ะ`
+      const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
+      const url = URL.createObjectURL(audioBlob);
+
+      if (response.status === 200) {
+        setAudioUrl(url);
+        console.log('URL : ', url);
+        console.log('Status Code:', response.status);
+
+        // เพิ่มเงื่อนไขให้ play() ทำงาน
+        play();
+      } else {
+        console.log('Failed to fetch audio. Status Code:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching audio:', error);
+    }
+  };
+
+  const play = () => {
+    audioRef.current.load();
+    audioRef.current.play();
+    setIsPlaying(true);
+    console.log('isPlaying:', isPlaying);
+  
+    audioRef.current.addEventListener('canplaythrough', () => {
+      setTimeout(() => {
+        setIsPlaying(false);
+        // ทำการ unmount component ทันทีหลังจากที่ไฟล์เสียงเล่นเสร็จสิ้น
+        // คุณอาจจะใช้ hook ต่างๆ เพื่อทำให้ unmount ได้
+        console.log('Component unmounted');
+      }, audioRef.current.duration * 1000 + 2000); // รอจนกว่าจะจบไฟล์แล้วรอเพิ่มอีก 2 วินาที
     });
-
-    var requestOptions = {
-      method: 'PATCH',
-      headers: myHeaders,
-      body: raw,
-      redirect: 'follow'
-    };
-
-    fetch("http://10.0.51.72:3001/generate-audio", requestOptions)
-      .then(response => response.json())
-      .then(result => {
-        console.log(result)
-        if (result.success) {
-          fetchAudio();
-          clearVariable();
-          updateData();
-        } else {
-          console.log("Error generating audio");
-        }
-      })
-      .catch(error => console.log('error', error));
-      } 
-
-      const fetchAudio = async () => {
-        try {
-          const response = await axios.get('http://10.0.51.72:3001/api/getAudio', {
-            responseType: 'blob',
-          });
-      
-          const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
-          const url = URL.createObjectURL(audioBlob);
-      
-          if (response.status === 200) {
-            setAudioUrl(url);
-            console.log('URL : ', url);
-            console.log('Status Code:', response.status);
-            
-            // เพิ่มเงื่อนไขให้ play() ทำงาน
-            play();
-            
-          } else {
-            console.log('Failed to fetch audio. Status Code:', response.status);
-          }
-        } catch (error) {
-          console.error('Error fetching audio:', error);
-        }
-      };
-      
-
-      const play = () => {
-        audioRef.current.load();
-        audioRef.current.addEventListener('canplaythrough', () => {
-          audioRef.current.play();
-          setIsPlaying(true);
-          console.log('isPlaying:', isPlaying);
-      
-          setTimeout(() => {
-            setIsPlaying(false);
-          }, audioRef.current.duration * 1000 + 1000); // รอจนกว่าจะจบไฟล์แล้วรอเพิ่มอีก 1 วินาที
-      
-          setTimeout(() => {
-            // ทำการ unmount component ทันทีหลังจากที่ไฟล์เสียงเล่นเสร็จสิ้น
-            // คุณอาจจะใช้ hook ต่างๆ เพื่อทำให้ unmount ได้
-            console.log('Component unmounted');
-          }, audioRef.current.duration * 1000 + 2000); // รอจนกว่าจะจบไฟล์แล้วรอเพิ่มอีก 2 วินาที
-        });
-      };
-
-  // const play = () => {
-  //   audioRef.current.load();
-  //   audioRef.current.addEventListener('canplaythrough', () => {
-  //     audioRef.current.play();
-  //     setIsPlaying(true);
-  //     console.log(isPlaying);
-      
-  //   });
-  // };
-
+  };
+  
 
   const fetchData = () => {
     var requestOptions = {
       method: 'GET',
-      redirect: 'follow'
+      redirect: 'follow',
     };
-    
-    fetch("http://10.0.51.72:3001/readTVCall", requestOptions)
+
+    fetch(`${apiIp}/readTVCall`, requestOptions)
       .then(response => response.json())
       .then(result => {
-        if(result.length > 0){
-        setPoint(result[0].point_id);
-        setName(result[0].fullname);
-        setQueue(result[0].queue);
-        setQueueID(result[0].qid);        
-        }else{
-          console.log("No DATA!")
+        if (result.length > 0) {
+          setPoint(result[0].point_id);
+          setName(result[0].fullname);
+          setQueue(result[0].queue);
+          setQueueID(result[0].qid);
+        } else {
+          console.log('No DATA!');
         }
-       
       })
       .catch(error => console.log('error', error));
-  }
+  };
 
   const deleteAudio = async () => {
     try {
-      await axios.delete('http://10.0.51.72:3001/api/deleteAudio');
+      await axios.delete(`${apiIp}/api/deleteAudio`);
       console.log('File deleted successfully');
       clearVariable();
     } catch (error) {
@@ -163,64 +115,41 @@ export default function AudioPlayer() {
       method: 'PATCH',
       redirect: 'follow',
     };
-  
+
     fetch(`${apiIp}/downdate/${queueID}`, requestOptions)
       .then(response => response.text())
       .then(result => {
         console.log(result);
-        
       })
       .catch(error => console.log('error', error));
   };
-  
 
   const clearVariable = () => {
     setPoint('');
-        setName('');
-        setQueue('');
-        setQueueID('');
-        console.log('success fully clearVariable')
-  }
+    setName('');
+    setQueue('');
+    setQueueID('');
+    console.log('success fully clearVariable');
+  };
 
   useEffect(() => {
-   
     // ตรวจสอบว่า isPlaying เป็น false และมีข้อมูลเพียงพอหรือไม่ แล้วทำงาน fetchData
     if (!isPlaying) {
       fetchData();
       const intervalID = setInterval(fetchData, 1000);
-  
+
       // ตรวจสอบว่ามีข้อมูลเพียงพอหรือไม่ แล้วทำงาน generateAudio
       if (Point && Name && Queue && queueID) {
-        generateAudio();
+        fetchAudio();
         return () => {
           clearInterval(intervalID);
         };
       }
     }
   });
-  
-
-  // useEffect(() => {
-  //   fetchData();
-  //   const intervalID = setInterval(fetchData,1000)
-  //   // ตรวจสอบว่ามีข้อมูลเพียงพอหรือไม่ แล้วทำงาน generateAudio
-  //   if (Point && Name && Queue && queueID) {
-  //     generateAudio();
-  //     return()=>{
-  //       clearInterval(intervalID)
-  //     }
-  //   }
-  // }); // ให้ useEffect ทำงานเมื่อ component ถูก mount เท่านั้น
 
   return (
     <React.Fragment>
-      {/* <button onClick={fetchData}>fetchData</button>
-      <button onClick={generateAudio}>generate</button>
-      <button onClick={fetchAudio}>FetchAudio</button>
-      <button onClick={play}>Play</button> {/* เล่นไฟล์จบแล้วถึงทำขั้นตอนต่อไป 
-      <button onClick={deleteAudio}>Delete</button>
-      <button onClick={updateData}>Updatedata</button>
-      <button onClick={clearVariable}>clearVariable</button> */}
       <audio ref={audioRef} controls style={{ display: 'none' }}>
         <source src={audioUrl} type="audio/mp3" />
         Your browser does not support the audio element.

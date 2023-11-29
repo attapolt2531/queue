@@ -15,6 +15,7 @@
     "buffer": "^6.0.3",
     "esc-pos-encoder": "^2.0.1",
     "escpos": "^3.0.0-alpha.6",
+    "file-saver": "^2.0.5",
     "google-translate-tts": "^0.4.0-dev",
     "https-browserify": "^1.0.0",
     "path-browserify": "^1.0.1",
