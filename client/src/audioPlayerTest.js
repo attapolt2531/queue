@@ -24,15 +24,10 @@ export default function AudioPlayer() {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const formatQueueNumber = (number) => {
-    return number.toString().padStart(3, '0');
-  }
 
-  const formattedQueue = formatQueueNumber(queue);
 
-const number1 = formattedQueue[0];
-const number2 = formattedQueue[1];
-const number3 = formattedQueue[2];
+
+
   
   useEffect(() => {
     localStorage.setItem('isPlaying', isPlaying.toString());
@@ -80,19 +75,11 @@ const number3 = formattedQueue[2];
   let currentTrackIndex = 0;
 
   const playNextTrack = () => {
-    if (currentTrackIndex < playlist.length - 1) {
-      currentTrackIndex++;
-      audioRef.current.src = playlist[currentTrackIndex];
-      audioRef.current.load();
-      audioRef.current.play();
-    } else {
-      currentTrackIndex = 0;
       updateData();
       console.log(isPlaying);
       setIsPlaying(false)
-
     }
-  };
+  
 
   const play = () => {
     audioRef.current.src = playlist[currentTrackIndex];

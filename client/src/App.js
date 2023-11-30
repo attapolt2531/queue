@@ -5,7 +5,7 @@ import SignIn from './signIn';
 import Print from './print';
 import Signup from './signup';
 import AudioPlayer from './audioPlayer'
-
+// import AudioPlayerTest from './audioPlayerTest';
 
 
 
@@ -20,6 +20,7 @@ function App() {
     <Route path='signup' element={<Signup />} />
     {/* <Route path='TextToSpeech' element={<TextToSpeech />} /> */}
     <Route path='monitor' element={<AudioPlayer />} />
+    {/* <Route path='monitorTest' element={<AudioPlayerTest />} /> */}
   </Routes>
 </div>
   );
