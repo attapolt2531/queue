@@ -47,9 +47,9 @@ function handleDisconnectHis() {
 handleDisconnectHis();
 
 const dbConfigPhr = {
-    host: 'localhost',
-    user: 'root',
-    password: '',
+    host: '10.0.51.72',
+    user: 'client',
+    password: 'p11026',
     database: 'phr_queue',
     port: '3306',
 };
