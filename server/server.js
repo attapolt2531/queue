@@ -75,6 +75,31 @@ app.post("/create", async(req, res)=>{
     
 })
 
+//Create Routes
+app.post("/createDel", async(req, res)=>{
+    const {vn,point_id} = req.body;
+    const status = 'Y'
+
+    try{
+        connection.query(
+            "INSERT INTO callqueue(queue_id,point_id,datetime_call,status) VALUES(?,?,CURRENT_TIMESTAMP,?)",
+            [vn,point_id,status],
+            (err,result,fields) => {
+                if(err){
+                    console.log("Error while inserting Data into data base", err)
+                    return res.status(400).send();
+                }
+                return res.status(201).json({status: "ok",message: "New data successfully created!"})
+            }
+        )
+
+    } catch(err){
+        console.log(err)
+        return res.status(500).send()
+    }
+    
+})
+
 // Create queue
 app.post("/insert", async (req, res) => {
     const { vn, queueType,queue, hn, fname, dep } = req.body;

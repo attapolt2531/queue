@@ -23,5 +23,5 @@ yarn.lock
 .idea/
 
 # Ignore production build files
-/build/
-/dist/
+# /build/
+# /dist/

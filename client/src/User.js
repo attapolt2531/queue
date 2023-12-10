@@ -15,12 +15,14 @@ import ButtonGroupChanel from './buttonGroupChanel';
 // import ButtonGroupPatient from './buttonGroupPatient';
 import { Badge, Container } from '@mui/material';
 // import Link from '@mui/material/Link';
-import Navbar from './Navbar'
+import Navbar from './Navbar';
 // import { Link } from 'react-router-dom';
 import { apiIp, apiHisIp } from './config';
-import Swal from 'sweetalert2'
-import MaterialUISwitch from './switch'
+import Swal from 'sweetalert2';
+import MaterialUISwitch from './switch';
 import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
+import IconButton from '@mui/material/IconButton';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 
 const ErrAlert = () => {
   Swal.fire({
@@ -78,6 +80,8 @@ export default function Users() {
       })
       .catch(error => console.log('error', error));
   };
+
+  
   
 
   const [items, setItems] = useState([]);
@@ -146,7 +150,8 @@ const generateAudio = (row,selectedIndex) => {
 
 var raw = JSON.stringify({
 "name": `${row.vn}${selectedIndex}`,  
-"text": `ขอเชิญหมายเลข ${row.rx_queue} ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
+// "text": `ขอเชิญหมายเลข ${row.rx_queue} ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
+"text": ` ขอเชิญ ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
 });
 
 var requestOptions = {
@@ -190,6 +195,30 @@ const create = (row, selectedIndex) => {
             .then(result => {
               console.log(result)
               insert(row);
+            })
+            .catch(error => console.error('Error in second fetch:', error));
+}
+
+const createDel = (row, selectedIndex) => {
+  var myHeaders = new Headers();
+          myHeaders.append('Content-Type', 'application/json');
+
+          var raw = JSON.stringify({
+            vn: row.vn,
+            point_id: selectedIndex,
+          });
+
+          var postRequestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow',
+          };
+
+          fetch(apiIp + '/createDel', postRequestOptions)
+            .then(response => response.text())
+            .then(result => {
+              console.log(result)
             })
             .catch(error => console.error('Error in second fetch:', error));
 }
@@ -315,6 +344,7 @@ fetch(`${apiIp}/authen`, requestOptions)
             <Table sx={{ minWidth: 650, }} aria-label="simple table">
               <TableHead>
                 <TableRow style={{background:'#1D5D9B'}}>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }}></TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }}>HN</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">vn</TableCell>
                   <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Name</TableCell>
@@ -333,17 +363,21 @@ fetch(`${apiIp}/authen`, requestOptions)
                     sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                     style={row.type === 'A' ?{background:'#FF7676'}:{}} 
                   >
+                    <TableCell component="th" scope="row"><IconButton aria-label="delete" color="error" >
+                    <RemoveCircleIcon onClick={() => createDel(row, selectedIndex)} />
+                    </IconButton></TableCell>
                     <TableCell component="th" scope="row">{row.hn}</TableCell>
                     <TableCell align="center">{row.vn}</TableCell>
                     <TableCell align="right">{row.fullname}</TableCell>
                     <TableCell align="right">{row.department}</TableCell>
                     <TableCell style={{ fontWeight: 'bold'}} align="right">{row.rx_queue}</TableCell>
-                    <TableCell align="right"></TableCell>
+                    <TableCell align="right">{row.status}</TableCell>
                     <TableCell align="center">
                     <Badge badgeContent={row.cc_call} color='error'>
                     <Button variant="contained" color='success' onClick={() => call(row, selectedIndex)} endIcon={<CampaignIcon />}>เรียก</Button>
                     </Badge>
                     <Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopIcon />Print</Button>
+                    
                     </TableCell>
                     {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
         <CampaignIcon /> Call

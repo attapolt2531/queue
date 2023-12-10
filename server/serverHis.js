@@ -54,6 +54,14 @@ const dbConfigPhr = {
     port: '3306',
 };
 
+// const dbConfigPhr = {
+//   host: 'localhost',
+//   user: 'root',
+//   password: '',
+//   database: 'phr_queue',
+//   port: '3306',
+// };
+
 let connectionPhr;
 
 function handleDisconnectPhr() {
@@ -81,32 +89,56 @@ function handleDisconnectPhr() {
 handleDisconnectPhr();
 
 // READ new
-
 app.get("/read/multi/:status", async (req, res) => {
-  const status = req.params.status;
-
-  try {
-      if (status == 'true') {
+    const status = req.params.status;
+  
+    try {
+      connectionPhr.query("SELECT callqueue.queue_id, qstatus.name AS status FROM callqueue INNER JOIN qstatus ON qstatus.status = callqueue.status WHERE qstatus.status = 'Y'", (errPhr, resultPhr, fieldsPhr) => {
+        if (errPhr) {
+          console.log("error fetching queue_id from phr_queue.call_queue");
+          return res.status(400).send();
+        }
+  
+        if (status == 'true') {
           connectionHis.query("SET NAMES utf8mb4");
-          connectionHis.query("SELECT ovst.hn, ovst.vn, CONCAT(patient.pname,patient.fname,' ',patient.lname) AS fullname, ovst.rx_queue, rx_operator.rx_time,kskdepartment.department FROM rx_operator INNER JOIN ovst ON rx_operator.vn = ovst.vn INNER JOIN patient ON patient.hn = ovst.hn INNER JOIN kskdepartment ON ovst.main_dep = kskdepartment.depcode WHERE vstdate = CURDATE() AND rx_operator.rx_depcode IN ('020') ORDER BY ovst.rx_queue ASC", (err, result, fields) => {
-              if (err) {
-                  console.log("error");
-                  return res.status(400).send();
-              }
-              res.status(200).json(result);
+          const queryString = `
+            SELECT
+              ovst.hn,
+              ovst.vn,
+              CONCAT(patient.pname, patient.fname, ' ', patient.lname) AS fullname,
+              ovst.rx_queue,
+              rx_operator.rx_time,
+              kskdepartment.department
+            FROM
+              rx_operator
+            INNER JOIN ovst ON rx_operator.vn = ovst.vn
+            INNER JOIN patient ON patient.hn = ovst.hn
+            INNER JOIN kskdepartment ON ovst.main_dep = kskdepartment.depcode
+            WHERE
+              vstdate = CURDATE()
+              AND rx_operator.rx_depcode IN ('020')
+            ORDER BY
+              ovst.rx_queue ASC
+          `;
+  
+          connectionHis.query(queryString, (errHis, resultHis, fieldsHis) => {
+            if (errHis) {
+              console.log("error fetching data from hosxp.ovst");
+              return res.status(400).send();
+            }
+  
+            // Combine the results by adding the 'status' property to each item in resultHis
+            const combinedResult = resultHis.map((item) => ({
+              ...item,
+              status: resultPhr.find((statusItem) => statusItem.queue_id === item.vn)?.status || "ยังไม่เรียก",
+            }));
+  
+            res.status(200).json(combinedResult);
           });
-      } else {
-        connectionPhr.query("SELECT queue_id FROM callqueue WHERE status = 'Y'", (errPhr, resultPhr, fieldsPhr) => {
-          if (errPhr) {
-            console.log("error fetching queue_id from phr_queue.call_queue");
-            return res.status(400).send();
-          }
-
-
-        
+        } else {
           // Extract vn values from the resultPhr
           const vnList = resultPhr.map((item) => item.queue_id);
-        
+  
           connectionHis.query("SET NAMES utf8mb4");
           const queryString = `
             SELECT
@@ -128,21 +160,31 @@ app.get("/read/multi/:status", async (req, res) => {
             ORDER BY
               ovst.rx_queue ASC
           `;
-        
+  
           connectionHis.query(queryString, [vnList], (errHis, resultHis, fieldsHis) => {
             if (errHis) {
               console.log("error fetching data from hosxp.ovst");
               return res.status(400).send();
             }
-            res.status(200).json(resultHis);
+  
+            // Combine the results by adding the 'status' property to each item in resultHis
+            const combinedResult = resultHis.map((item) => ({
+              ...item,
+              status: resultPhr.find((statusItem) => statusItem.queue_id === item.vn)?.status || "ยังไม่เรียก",
+            }));
+  
+            res.status(200).json(combinedResult);
           });
-        });
-      }
-  } catch (err) {
+        }
+      });
+    } catch (err) {
       console.log(err);
       return res.status(500).send();
-  }
-});
+    }
+  });
+
+  
+  
 
 
 // User Print
