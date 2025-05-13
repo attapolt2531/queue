@@ -23,6 +23,8 @@ import MaterialUISwitch from './switch';
 import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
 import IconButton from '@mui/material/IconButton';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import TextField from '@mui/material/TextField';
+
 
 const ErrAlert = () => {
   Swal.fire({
@@ -52,7 +54,7 @@ export default function Users() {
       .then(result => {
         Swal.fire({
           title: 'ระบบกำลังเรียกคิวผู้ป่วย',
-          text: `คิวที่ ${row.rx_queue} HN ${row.hn} ${row.fullname}`,
+          text: `คิวที่ ${row.oqueue} HN ${row.hn} ${row.fullname}`,
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#3085d6',
@@ -230,7 +232,7 @@ const insert = (row) => {
     var raw = JSON.stringify({
       "vn": row.vn,
       "queueType": "2",
-      "queue": row.rx_queue,
+      "queue": row.oqueue,
       "hn": row.hn,
       "fname": row.fullname,
       "dep": row.department
@@ -313,82 +315,110 @@ fetch(`${apiIp}/authen`, requestOptions)
   .catch(error => console.log('error', error));
 
   })
+
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+const filteredItems = items.filter((row) => {
+  const hn = row.hn?.toLowerCase() || "";
+  const name = row.fullname?.toLowerCase() || "";
+  const term = searchTerm.toLowerCase();
+  return hn.includes(term) || name.includes(term);
+});
+
    
 
   
 
 
   return (
-    <React.Fragment>
-      <CssBaseline/>
-      <Navbar />
-      <Container maxWidth="lg" sx={{ padding: 2 }}>
-        <Paper sx={{ padding: 2 }}>
+  <React.Fragment>
+    <CssBaseline />
+    <Navbar />
+    <Container maxWidth="lg" sx={{ padding: 2 }}>
+      <Paper sx={{ padding: 2 }}>
         {/* <Control/> */}
-          <Box display="flex" sx={{padding:2}}>
-            <Box sx={{ flexGrow: 1 }}>
-              {/* <Link href='create'>
-                <Button variant="contained" color='error' startIcon={<AddCircleIcon/>}>สร้างบัตรคิวใหม่</Button>
-              </Link> */}
-            </Box>
-            <Box sx={{padding:1}}>
-              <MaterialUISwitch />
-            {/* <ButtonGroupPatient /> */}
-            </Box>
-            <Box sx={{padding:1}}>
-            <ButtonGroupChanel selectedIndex={selectedIndex} setSelectedIndex={setSelectedIndex}/>
-            </Box>
+        <Box display="flex" sx={{ padding: 2 }}>
+          <Box sx={{ flexGrow: 1 }}>
+            {/* <Link href='create'>
+              <Button variant="contained" color='error' startIcon={<AddCircleIcon />}>สร้างบัตรคิวใหม่</Button>
+            </Link> */}
           </Box>
-          
-          <TableContainer component={Paper} >
-            <Table sx={{ minWidth: 650, }} aria-label="simple table">
-              <TableHead>
-                <TableRow style={{background:'#1D5D9B'}}>
-                <TableCell style={{ fontWeight: 'bold', color: 'white' }}></TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }}>HN</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">vn</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Name</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Department</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Queue</TableCell>
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Status</TableCell>
+          <Box sx={{ padding: 1 }}>
+            <MaterialUISwitch />
+            {/* <ButtonGroupPatient /> */}
+          </Box>
+          <Box sx={{ padding: 1 }}>
+            <ButtonGroupChanel selectedIndex={selectedIndex} setSelectedIndex={setSelectedIndex} />
+          </Box>
+        </Box>
 
-                  
-                  <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((row, index) => (
-                  <TableRow 
-                    key={index}
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                    style={row.type === 'A' ?{background:'#FF7676'}:{}} 
-                  >
-                    <TableCell component="th" scope="row"><IconButton aria-label="delete" color="error" >
-                    <RemoveCircleIcon onClick={() => createDel(row, selectedIndex)} />
-                    </IconButton></TableCell>
-                    <TableCell component="th" scope="row">{row.hn}</TableCell>
-                    <TableCell align="center">{row.vn}</TableCell>
-                    <TableCell align="right">{row.fullname}</TableCell>
-                    <TableCell align="right">{row.department}</TableCell>
-                    <TableCell style={{ fontWeight: 'bold'}} align="right">{row.rx_queue}</TableCell>
-                    <TableCell align="right">{row.status}</TableCell>
-                    <TableCell align="center">
+        {/* ช่องค้นหา */}
+        <Box display="flex" justifyContent="flex-end" sx={{ marginBottom: 2 }}>
+          <TextField
+            label="ค้นหา HN หรือ ชื่อ"
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </Box>
+
+        {/* ตารางแสดงผล */}
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+            <TableHead>
+              <TableRow style={{ background: '#1D5D9B' }}>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }}></TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }}>HN</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">vn</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Name</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Department</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Queue</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="right">Status</TableCell>
+                <TableCell style={{ fontWeight: 'bold', color: 'white' }} align="center">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredItems.map((row, index) => (
+                <TableRow
+                  key={index}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  style={row.type === 'A' ? { background: '#FF7676' } : {}}
+                >
+                  <TableCell component="th" scope="row">
+                    <IconButton aria-label="delete" color="error">
+                      <RemoveCircleIcon onClick={() => createDel(row, selectedIndex)} />
+                    </IconButton>
+                  </TableCell>
+                  <TableCell component="th" scope="row">{row.hn}</TableCell>
+                  <TableCell align="center">{row.vn}</TableCell>
+                  <TableCell align="right">{row.fullname}</TableCell>
+                  <TableCell align="right">{row.department}</TableCell>
+                  <TableCell style={{ fontWeight: 'bold' }} align="right">{row.oqueue}</TableCell>
+                  <TableCell align="right">{row.status}</TableCell>
+                  <TableCell align="center">
                     <Badge badgeContent={row.cc_call} color='error'>
-                    <Button variant="contained" color='success' onClick={() => call(row, selectedIndex)} endIcon={<CampaignIcon />}>เรียก</Button>
+                      <Button
+                        variant="contained"
+                        color='success'
+                        onClick={() => call(row, selectedIndex)}
+                        endIcon={<CampaignIcon />}
+                      >
+                        เรียก
+                      </Button>
                     </Badge>
-                    <Button sx={{marginLeft: 2}} variant="contained" color='warning' onClick={()=>printAndCloseTab(row.vn)}><LocalPrintshopIcon />Print</Button>
-                    
-                    </TableCell>
-                    {/* <TableCell align="right"><IconButton onClick={callOpen} color="success" aria-label="add an alarm">
-        <CampaignIcon /> Call
-      </IconButton></TableCell> */}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Container>
-    </React.Fragment>
-  );
+                    <Button sx={{ marginLeft: 2 }} variant="contained" color='warning' onClick={() => printAndCloseTab(row.vn)}>
+                      <LocalPrintshopIcon />Print
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Container>
+  </React.Fragment>
+);
+
 }

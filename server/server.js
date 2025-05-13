@@ -33,9 +33,9 @@ const connection = mysql.createConnection({
 
 //localhost
 // const connection = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: '',
+//     host: '172.22.36.75',
+//     user: 'dev',
+//     password: 'dev1234',
 //     database: 'phr_queue',
 //     port: '3306'
 // })
@@ -162,7 +162,7 @@ app.get("/readTV", async(req,res)=>{
 
     try{
 
-        connection.query("SELECT point_id,queue,qid,hn,fullname,vstdate,id,queue_id,calling,queue_type FROM (SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,queue.queue_type,ROW_NUMBER() OVER (PARTITION BY callqueue.queue_id ORDER BY callqueue.id DESC) AS row_num FROM callqueue INNER JOIN queue ON callqueue.queue_id = queue.vn WHERE queue.vstdate = CURDATE()  ORDER BY callqueue.id DESC) AS ranked WHERE row_num = 1 LIMIT 4", (err,result,fields)=>{
+        connection.query("SELECT point_id,queue,qid,hn,fullname,vstdate,id,queue_id,calling,queue_type FROM (SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,queue.queue_type,ROW_NUMBER() OVER (PARTITION BY callqueue.queue_id ORDER BY callqueue.id DESC) AS row_num FROM callqueue INNER JOIN queue ON callqueue.queue_id = queue.vn WHERE queue.vstdate = CURDATE()  ORDER BY callqueue.id DESC) AS ranked WHERE row_num = 1 LIMIT 5", (err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();

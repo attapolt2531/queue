@@ -55,9 +55,9 @@ const dbConfigPhr = {
 };
 
 // const dbConfigPhr = {
-//   host: 'localhost',
-//   user: 'root',
-//   password: '',
+//   host: '172.22.36.75',
+//   user: 'dev',
+//   password: 'dev1234',
 //   database: 'phr_queue',
 //   port: '3306',
 // };
@@ -106,7 +106,7 @@ app.get("/read/multi/:status", async (req, res) => {
               ovst.hn,
               ovst.vn,
               CONCAT(patient.pname, patient.fname, ' ', patient.lname) AS fullname,
-              ovst.rx_queue,
+              ovst.oqueue,
               rx_operator.rx_time,
               kskdepartment.department
             FROM
@@ -118,7 +118,7 @@ app.get("/read/multi/:status", async (req, res) => {
               vstdate = CURDATE()
               AND rx_operator.rx_depcode IN ('020')
             ORDER BY
-              ovst.rx_queue ASC
+              ovst.oqueue ASC
           `;
   
           connectionHis.query(queryString, (errHis, resultHis, fieldsHis) => {
@@ -145,7 +145,7 @@ app.get("/read/multi/:status", async (req, res) => {
               ovst.hn,
               ovst.vn,
               CONCAT(patient.pname, patient.fname, ' ', patient.lname) AS fullname,
-              ovst.rx_queue,
+              ovst.oqueue,
               rx_operator.rx_time,
               kskdepartment.department
             FROM
@@ -158,7 +158,7 @@ app.get("/read/multi/:status", async (req, res) => {
               AND rx_operator.rx_depcode IN ('020')
               AND ovst.vn NOT IN (?)
             ORDER BY
-              ovst.rx_queue ASC
+              ovst.oqueue ASC
           `;
   
           connectionHis.query(queryString, [vnList], (errHis, resultHis, fieldsHis) => {
@@ -195,7 +195,7 @@ app.get("/read/single/:vn", async (req, res) => {
 
     try {
         connectionHis.query("SET NAMES utf8mb4");
-        connectionHis.query("SELECT ovst.hn, ovst.vn, CONCAT(patient.pname,patient.fname,' ',patient.lname) AS fullname, ovst.rx_queue, rx_operator.rx_time,kskdepartment.department FROM rx_operator INNER JOIN ovst ON rx_operator.vn = ovst.vn INNER JOIN patient ON patient.hn = ovst.hn INNER JOIN kskdepartment ON ovst.main_dep = kskdepartment.depcode WHERE vstdate = CURDATE() AND rx_operator.rx_depcode IN ('020') AND ovst.vn = ? ORDER BY ovst.rx_queue ASC", [vn], (err, result, fields) => {
+        connectionHis.query("SELECT ovst.hn, ovst.vn, CONCAT(patient.pname,patient.fname,' ',patient.lname) AS fullname, ovst.oqueue, rx_operator.rx_time,kskdepartment.department FROM rx_operator INNER JOIN ovst ON rx_operator.vn = ovst.vn INNER JOIN patient ON patient.hn = ovst.hn INNER JOIN kskdepartment ON ovst.main_dep = kskdepartment.depcode WHERE vstdate = CURDATE() AND rx_operator.rx_depcode IN ('020') AND ovst.vn = ? ORDER BY ovst.oqueue ASC", [vn], (err, result, fields) => {
             if (err) {
                 console.log("error")
                 return res.status(400).send();
