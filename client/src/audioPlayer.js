@@ -4,157 +4,100 @@ import QueueMonitor from './queueMonitor';
 import { apiIp } from './config';
 
 export default function AudioPlayer() {
+  const [queueData, setQueueData] = useState(null); // { qid, queue, fullname, point_id }
   const [audioUrl, setAudioUrl] = useState('');
   const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [queueID, setQueueID] = useState('');
-  const [Queue, setQueue] = useState('');
-  const [Name, setName] = useState('');
-  const [Point, setPoint] = useState('');
 
+  // Fetch queue every second until we get a new one
   useEffect(() => {
-    localStorage.setItem('isPlaying', isPlaying.toString());
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const currentAudioRef = audioRef.current;
-
-    // เพิ่ม event listener สำหรับเมื่อไฟล์ MP3 ถูกเล่นจบ
-    currentAudioRef.addEventListener('ended', () => {
-      setIsPlaying(false);
-      updateData();
-      clearVariable();
-      deleteAudio();
-    });
-
-    // ตอนที่ component ถูก unmount, ลบ event listener
-    return () => {
-      currentAudioRef.removeEventListener('ended', () => {
-        setIsPlaying(false);
-        updateData();
-        clearVariable();
-        deleteAudio();
-      });
-    };
-  });
-
-  const fetchAudio = async () => {
-    try {
-      const response = await axios.get(`${apiIp}/api/getAudio`, {
-        responseType: 'blob',
-      });
-
-      const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
-      const url = URL.createObjectURL(audioBlob);
-
-      if (response.status === 200) {
-        setAudioUrl(url);
-        console.log('URL : ', url);
-        console.log('Status Code:', response.status);
-
-        // เพิ่มเงื่อนไขให้ play() ทำงาน
-        play();
-      } else {
-        console.log('Failed to fetch audio. Status Code:', response.status);
-      }
-    } catch (error) {
-      console.error('Error fetching audio:', error);
-    }
-  };
-
-  const play = () => {
-    audioRef.current.load();
-    audioRef.current.play();
-    setIsPlaying(true);
-    console.log('isPlaying:', isPlaying);
-  
-    audioRef.current.addEventListener('canplaythrough', () => {
-      setTimeout(() => {
-        setIsPlaying(false);
-        // ทำการ unmount component ทันทีหลังจากที่ไฟล์เสียงเล่นเสร็จสิ้น
-        // คุณอาจจะใช้ hook ต่างๆ เพื่อทำให้ unmount ได้
-        console.log('Component unmounted');
-      }, audioRef.current.duration * 1000 + 2000); // รอจนกว่าจะจบไฟล์แล้วรอเพิ่มอีก 2 วินาที
-    });
-  };
-  
-
-  const fetchData = () => {
-    var requestOptions = {
-      method: 'GET',
-      redirect: 'follow',
-    };
-
-    fetch(`${apiIp}/readTVCall`, requestOptions)
-      .then(response => response.json())
-      .then(result => {
-        if (result.length > 0) {
-          setPoint(result[0].point_id);
-          setName(result[0].fullname);
-          setQueue(result[0].queue);
-          setQueueID(result[0].qid);
-        } else {
-          console.log('No DATA!');
+    let poller;
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${apiIp}/readTVCall`);
+        const data = await res.json();
+        if (data.length > 0) {
+          // ถ้าเจอคิวใหม่และยังไม่เคยเล่น
+          const item = data[0];
+          if (!queueData || item.qid !== queueData.qid) {
+            setQueueData(item);
+            clearInterval(poller);
+          }
         }
-      })
-      .catch(error => console.log('error', error));
-  };
-
-  const deleteAudio = async () => {
-    try {
-      await axios.delete(`${apiIp}/api/deleteAudio`);
-      console.log('File deleted successfully');
-      clearVariable();
-    } catch (error) {
-      console.error('Error deleting audio:', error);
-    }
-  };
-
-  const updateData = () => {
-    var requestOptions = {
-      method: 'PATCH',
-      redirect: 'follow',
+      } catch (err) {
+        console.error('Error fetching queue:', err);
+      }
     };
 
-    fetch(`${apiIp}/downdate/${queueID}`, requestOptions)
-      .then(response => response.text())
-      .then(result => {
-        console.log(result);
-      })
-      .catch(error => console.log('error', error));
-  };
+    fetchData();
+    poller = setInterval(fetchData, 1000);
+    return () => clearInterval(poller);
+  }, [queueData]);
 
-  const clearVariable = () => {
-    setPoint('');
-    setName('');
-    setQueue('');
-    setQueueID('');
-    console.log('success fully clearVariable');
-  };
-
+  // เมื่อ queueData เปลี่ยน ให้ขอสร้างไฟล์เสียงและเล่น
   useEffect(() => {
-    // ตรวจสอบว่า isPlaying เป็น false และมีข้อมูลเพียงพอหรือไม่ แล้วทำงาน fetchData
-    if (!isPlaying) {
-      fetchData();
-      const intervalID = setInterval(fetchData, 1000);
+    if (!queueData) return;
 
-      // ตรวจสอบว่ามีข้อมูลเพียงพอหรือไม่ แล้วทำงาน generateAudio
-      if (Point && Name && Queue && queueID) {
-        fetchAudio();
-        return () => {
-          clearInterval(intervalID);
+    let objectUrl;
+    let deleteTimer;
+
+    const generateAndPlay = async () => {
+      try {
+        // 1. สร้างเสียงจาก backend
+        const payload = {
+          name: `${queueData.vn}${queueData.point_id}`,
+          text: `ขอเชิญ ${queueData.fullname} ที่ช่องรับยาหมายเลข ${queueData.point_id} ค่ะ`,
         };
+        const genRes = await fetch(`${apiIp}/generate-audio`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const genJson = await genRes.json();
+        if (!genJson.success) throw new Error(genJson.error || 'Generate failed');
+
+        // 2. ดึงไฟล์เสียงแบบ blob
+        const audioRes = await axios.get(`${apiIp}/api/getAudio`, { responseType: 'blob' });
+        objectUrl = URL.createObjectURL(new Blob([audioRes.data], { type: 'audio/mp3' }));
+        setAudioUrl(objectUrl);
+
+        // 3. เล่นเสียง
+        const audioEl = audioRef.current;
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        audioEl.load();
+        await audioEl.play();
+
+        // 4. เมื่อเล่นจบ ทำงาน Update / Delete
+        audioEl.onended = async () => {
+          try {
+            await fetch(`${apiIp}/downdate/${queueData.qid}`, { method: 'PATCH' });
+            await fetch(`${apiIp}/api/deleteAudio`, { method: 'DELETE' });
+          } catch (e) {
+            console.error('Post-play cleanup error:', e);
+          }
+          setQueueData(null);
+        };
+      } catch (err) {
+        console.error('Audio generation/play error:', err);
+        setQueueData(null);
       }
-    }
-  });
+    };
+
+    generateAndPlay();
+
+    return () => {
+      // Cleanup URL object และ timers
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (deleteTimer) clearTimeout(deleteTimer);
+    };
+  }, [queueData]);
 
   return (
-    <React.Fragment>
-      <audio ref={audioRef} controls style={{ display: 'none' }}>
+    <>
+      <audio ref={audioRef} style={{ display: 'none' }}>
         <source src={audioUrl} type="audio/mp3" />
-        Your browser does not support the audio element.
       </audio>
       <QueueMonitor />
-    </React.Fragment>
+    </>
   );
 }

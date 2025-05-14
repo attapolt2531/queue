@@ -146,35 +146,42 @@ useEffect(()=>{
 })
 
 
-const generateAudio = (row,selectedIndex) => {
-  var myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
+const generateAudio = async (row, selectedIndex) => {
+  try {
+    // 1. สร้างข้อความสำหรับ TTS
+    const payload = {
+      name: `${row.vn}${selectedIndex}`,
+      text: `ขอเชิญ ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`,
+    };
 
-var raw = JSON.stringify({
-"name": `${row.vn}${selectedIndex}`,  
-// "text": `ขอเชิญหมายเลข ${row.rx_queue} ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
-"text": ` ขอเชิญ ${row.fullname} ที่ช่องรับยาหมายเลข ${selectedIndex} ค่ะ`
-});
+    // 2. เรียก API สร้างไฟล์เสียง
+    const res = await fetch(`${apiIp}/generate-audio`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
 
-var requestOptions = {
-method: 'PATCH',
-headers: myHeaders,
-body: raw,
-redirect: 'follow'
+    if (!result.success) {
+      console.error('สร้างไฟล์ mp3 ไม่สำเร็จ:', result.error);
+      return;
+    }
+
+    // 3. backend ส่งกลับ URL สำหรับเล่นเสียง เช่น "/audio/output.mp3"
+    const audioUrl = result.url;
+
+    // 4. เล่นไฟล์เสียงทันที ด้วยระดับเสียงสูงสุด
+    const audio = new Audio(audioUrl);
+    audio.volume = 1.0;         // เต็มเสียง
+    audio.play().catch(console.error);
+
+    // 5. ทำงานอื่น ๆ ต่อ เช่น บันทึกคิว ฯลฯ
+    create(row, selectedIndex);
+  } catch (err) {
+    console.error('เกิดข้อผิดพลาดในการเรียก API:', err);
+  }
 };
 
-fetch(`${apiIp}/generate-audio`, requestOptions)
-.then(response => response.json())
-.then(result => {
-  console.log(result)
-  if(result.success){
-    create(row, selectedIndex)
-  }else{
-    console.log("สร้างไฟล์ mp3 ไม่สำเร็จ");
-  }
-})
-.catch(error => console.log('error', error));
-}
 
 const create = (row, selectedIndex) => {
   var myHeaders = new Headers();

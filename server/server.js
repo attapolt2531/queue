@@ -508,67 +508,46 @@ app.post("/register", async (req, res) => {
     }
 });
 
+// ใส่บรรทัดนี้ก่อน route อื่น ๆ
+app.use('/audio', express.static(path.join(__dirname, '../client/public/sound')));
+
+// generate-audio
 app.patch('/generate-audio', async (req, res) => {
-    try {
-      const { text } = req.body;
-      const fileName = 'output.mp3'; // ใช้ชื่อไฟล์และนามสกุลตามที่คุณต้องการ
-      const outputPath = path.join(__dirname, '../client/src/sound', fileName);
-      const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
-  
-      // ทำ HTTP request เพื่อดึงข้อมูล mp3
-      const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
-  
-      // ตรวจสอบและสร้างโฟลเดอร์ audio หากไม่มี
-      const audioFolder = path.join(__dirname, '../client/src/sound');
-      if (!fs.existsSync(audioFolder)) {
-        fs.mkdirSync(audioFolder);
-      }
-  
-      // เขียนข้อมูลลงในไฟล์
-      fs.writeFileSync(outputPath, Buffer.from(response.data));
-  
-      console.log('ดาวน์โหลดและบันทึกไฟล์เสียงเรียบร้อย');
-  
-      // เช็คว่าไฟล์ถูกเขียนเรียบร้อยหรือไม่
-      fs.access(outputPath, fs.constants.F_OK, (err) => {
-        if (err) {
-          console.error('มีปัญหาในการเข้าถึงไฟล์:', err);
-          return res.status(500).json({ error: 'มีปัญหาในการเข้าถึงไฟล์' });
-        }
-  
-        console.log('ไฟล์ถูกเขียนเรียบร้อย');
-        res.json({ success: true, message: 'ไฟล์ถูกเขียนเรียบร้อย' });
-      });
-    } catch (error) {
-      console.error('เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล:', error);
-      res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล', detailedError: error.message });
+  try {
+    const { text } = req.body;
+    const fileName = 'output.mp3';
+    const audioFolder = path.join(__dirname, '../client/public/sound');
+    const outputPath = path.join(audioFolder, fileName);
+
+    if (!fs.existsSync(audioFolder)) {
+      fs.mkdirSync(audioFolder, { recursive: true });
     }
-  });
 
-// Serve static files (including MP3 files)
-app.use('/audio', express.static(path.join(__dirname, '../client/src/sound')));
+    const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
+    const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
+    fs.writeFileSync(outputPath, Buffer.from(response.data));
 
-// API endpoint to get MP3 file
-app.get('/api/getAudio', (req, res) => {
-    const filePath = path.join(__dirname, '../client/src/sound', 'output.mp3');
-    res.status(200).sendFile(filePath);
-    
-    
-  });
-  
+    console.log('ไฟล์เสียงถูกเขียนที่:', outputPath);
+    res.json({ success: true, url: `/audio/${fileName}` });
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการสร้างไฟล์เสียง:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ลบไฟล์
 app.delete('/api/deleteAudio', (req, res) => {
-    const filePath = path.join(__dirname, '../client/src/sound', 'output.mp3');
-    // ลบไฟล์
-  fs.unlink(filePath, (err) => {
+  const filePath = path.join(__dirname, '../client/public/sound/output.mp3');
+  fs.unlink(filePath, err => {
     if (err) {
-      console.error('Error deleting file:', err);
-      return res.status(500).json({ error: 'Error deleting file' });
+      console.error('ลบไฟล์ไม่สำเร็จ:', err);
+      return res.status(500).json({ error: err.message });
     }
-
-    console.log('File deleted successfully');
-    res.json({ success: true, message: 'File deleted successfully' });
+    console.log('ลบไฟล์เสร็จแล้ว');
+    res.json({ success: true });
   });
 });
+
 
 
 app.listen(3001,()=>console.log('Server Is running on port 3001'));
