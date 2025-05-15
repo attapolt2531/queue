@@ -162,7 +162,7 @@ app.get("/readTV", async(req,res)=>{
 
     try{
 
-        connection.query("SELECT point_id,queue,qid,hn,fullname,vstdate,id,queue_id,calling,queue_type FROM (SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,queue.queue_type,ROW_NUMBER() OVER (PARTITION BY callqueue.queue_id ORDER BY callqueue.id DESC) AS row_num FROM callqueue INNER JOIN queue ON callqueue.queue_id = queue.vn WHERE queue.vstdate = CURDATE()  ORDER BY callqueue.id DESC) AS ranked WHERE row_num = 1 LIMIT 5", (err,result,fields)=>{
+        connection.query("SELECT point_id,queue,qid,hn,fullname,vstdate,id,queue_id,calling,queue_type FROM (SELECT callqueue.point_id,queue.queue,queue.id AS qid,queue.hn,queue.fullname,queue.vstdate,callqueue.id,callqueue.queue_id,queue.calling,queue.queue_type,ROW_NUMBER() OVER (PARTITION BY callqueue.queue_id ORDER BY callqueue.id DESC) AS row_num FROM callqueue INNER JOIN queue ON callqueue.queue_id = queue.vn WHERE queue.vstdate = CURDATE()  ORDER BY callqueue.id DESC) AS ranked WHERE row_num = 1 LIMIT 4", (err,result,fields)=>{
             if(err){
                 console.log("error")
                 return res.status(400).send();
@@ -508,43 +508,64 @@ app.post("/register", async (req, res) => {
     }
 });
 
-// ใส่บรรทัดนี้ก่อน route อื่น ๆ
-app.use('/audio', express.static(path.join(__dirname, '../client/public/sound')));
 
-// generate-audio
+
+// เปลี่ยนไปใช้ public/sound แทน src/sound
+const SOUND_FOLDER = path.join(__dirname, '../client/public/sound');
+const FILE_NAME = 'output.mp3';
+const OUTPUT_PATH = path.join(SOUND_FOLDER, FILE_NAME);
+
+// PATCH: สร้างไฟล์เสียง
 app.patch('/generate-audio', async (req, res) => {
   try {
     const { text } = req.body;
-    const fileName = 'output.mp3';
-    const audioFolder = path.join(__dirname, '../client/public/sound');
-    const outputPath = path.join(audioFolder, fileName);
+    const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
 
-    if (!fs.existsSync(audioFolder)) {
-      fs.mkdirSync(audioFolder, { recursive: true });
+    const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
+
+    // ตรวจสอบและสร้างโฟลเดอร์ sound ถ้ายังไม่มี
+    if (!fs.existsSync(SOUND_FOLDER)) {
+      fs.mkdirSync(SOUND_FOLDER, { recursive: true });
     }
 
-    const apiUrl = `https://translate.google.com.vn/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=th&client=tw-ob`;
-    const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
-    fs.writeFileSync(outputPath, Buffer.from(response.data));
+    // เขียนไฟล์ MP3
+    fs.writeFileSync(OUTPUT_PATH, Buffer.from(response.data));
 
-    console.log('ไฟล์เสียงถูกเขียนที่:', outputPath);
-    res.json({ success: true, url: `/audio/${fileName}` });
+    console.log('ดาวน์โหลดและบันทึกไฟล์เสียงเรียบร้อย');
+
+    fs.access(OUTPUT_PATH, fs.constants.F_OK, (err) => {
+      if (err) {
+        console.error('มีปัญหาในการเข้าถึงไฟล์:', err);
+        return res.status(500).json({ error: 'มีปัญหาในการเข้าถึงไฟล์' });
+      }
+
+      console.log('ไฟล์ถูกเขียนเรียบร้อย');
+      res.json({ success: true, message: 'ไฟล์ถูกเขียนเรียบร้อย' });
+    });
   } catch (error) {
-    console.error('เกิดข้อผิดพลาดในการสร้างไฟล์เสียง:', error);
-    res.status(500).json({ error: error.message });
+    console.error('เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล:', error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล', detailedError: error.message });
   }
 });
 
-// ลบไฟล์
+// Serve static files (เช่น mp3) ผ่าน /audio
+app.use('/audio', express.static(SOUND_FOLDER));
+
+// GET: ส่งไฟล์เสียงให้ client
+app.get('/api/getAudio', (req, res) => {
+  res.status(200).sendFile(OUTPUT_PATH);
+});
+
+// DELETE: ลบไฟล์เสียง
 app.delete('/api/deleteAudio', (req, res) => {
-  const filePath = path.join(__dirname, '../client/public/sound/output.mp3');
-  fs.unlink(filePath, err => {
+  fs.unlink(OUTPUT_PATH, (err) => {
     if (err) {
-      console.error('ลบไฟล์ไม่สำเร็จ:', err);
-      return res.status(500).json({ error: err.message });
+      console.error('Error deleting file:', err);
+      return res.status(500).json({ error: 'Error deleting file' });
     }
-    console.log('ลบไฟล์เสร็จแล้ว');
-    res.json({ success: true });
+
+    console.log('File deleted successfully');
+    res.json({ success: true, message: 'File deleted successfully' });
   });
 });
 
